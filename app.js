@@ -1,23 +1,25 @@
 const express = require('express');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
-const Blog= require('./models/blog')
+const Blog = require('./models/blog')
 
 // express app
 const app = express();
 
 // connect to mongoDB
 const dbURI = 'mongodb+srv://dima:maxloh14@nodestuduing.blgrmfb.mongodb.net/nodeStudying?retryWrites=true&w=majority';
+
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
-// listen for requests
+    // listen for requests
     .then((result) => app.listen(3000))
-    .catch((err) => console.log(err))
+    .catch((err) => console.log(err));
 
 // register a view engine
 app.set('view engine', 'ejs');
 
 // middleware & static files
 app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }))
 app.use(morgan('dev'));
 
 // mongoose and mongo sandbox routes
@@ -81,8 +83,45 @@ app.get('/blogs', (req, res) => {
 });
 
 app.get('/blogs/create', (req, res) => {
-    res.render('create', { title: 'CREATE A NEW BLOG' })
+    res.render('create', { title: 'Create a new blog' });
 });
+
+// post request
+app.post('/blogs', (req, res) => {
+    const blog = new Blog(req.body)
+
+    blog.save()
+        .then((result) => {
+            res.redirect('/blogs')
+        })
+        .catch((err) => {
+            console.log(err)
+        })
+});
+
+// get single blog request
+app.get('/blogs/:id', (req, res) => {
+    const id = req.params.id;
+
+    Blog.findById(id)
+        .then(result => {
+            res.render('details', { blog: result, title: 'Blog Details' });
+        })
+        .catch(err => {
+            console.log(err)
+        })
+})
+
+// delete response handler
+app.delete('/blogs/:id', (req, res) => {
+    const id = req.params.id;
+
+    Blog.findByIdAndDelete(id)
+        .then(result => {
+            res.json({ redirect: '/blogs' })
+        })
+        .catch(err => console.log(err))
+})
 
 // redirect
 app.get('/about-us', (req, res) => {
